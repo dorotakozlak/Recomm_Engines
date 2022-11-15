@@ -100,7 +100,7 @@ print(distance_df)
 print(distance_df['LAYS']['Star'])
 print(distance_df['DORITOS'].sort_values(ascending=False))
 
-
+print("check on github functionalities")
 #############
 
 ##User profile recommendations 
