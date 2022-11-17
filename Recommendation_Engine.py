@@ -2,7 +2,8 @@
 import pandas as pd
 from sklearn.metrics import jaccard_score
 from scipy.spatial.distance import pdist, squareform
-
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.neighbors import KNeighborsRegressor 
 from itertools import permutations 
 def create_pairs(x):
     pairs = pd.DataFrame(list(permutations(x.values, 2)),#books that are read together
@@ -100,12 +101,73 @@ print(distance_df)
 print(distance_df['LAYS']['Star'])
 print(distance_df['DORITOS'].sort_values(ascending=False))
 
-print("check on github functionalities")
-#############
 
 ##User profile recommendations 
-## add here based on "User profile recommendations"
+#Find similar users and based on it check items which they liked 
+data["Brand_Flavour"] = data["Brand"] +" " + data["HARMONIZED_FLAVOUR"]
+user_data = data.drop(data.columns[[1,2,3,4]],axis=1)
+user_data = user_data.pivot(index = "User", 
+                                  columns="Brand_Flavour",
+                                  values ="Liked")
+#NaN - filling with"0" might be misleading, so better to center each value around 0 
+avg_likes = user_data.mean(axis=1) #row means
+user_data_pivot = user_data.sub(avg_likes, axis=0) #substract from rest
+user_data_pivot = user_data_pivot.fillna(0)
 
-#############
+brand_data_pivot = user_data_pivot.T
+print(brand_data_pivot)
+#cosine - numpy array 
+cosine_similarity(brand_data_pivot.loc["LAYS Paprika", :].values.reshape(1,-1),
+                  brand_data_pivot.loc["Star Paprika", :].values.reshape(1,-1))
+#above - two brands quite similar
+cosine_similarity(brand_data_pivot.loc["LAYS Paprika", :].values.reshape(1,-1),
+                  brand_data_pivot.loc["Cheetos Cheese", :].values.reshape(1,-1))
+#above - value negative so not similar 
 
- 
+#the most similar items
+#CHECK IT IF SIMILARITIES ADDED PROPERLY #STH WRONG HERE!! Why NA?
+similarities = cosine_similarity(brand_data_pivot)
+cosine_similarity_df = pd.DataFrame(brand_data_pivot,#THIS!!!
+                                    index = brand_data_pivot.index,
+                                    columns = brand_data_pivot.index)
+
+cosine_similarity_item = cosine_similarity_df.loc["LAYS Salt"]
+ordered_similarities = cosine_similarity_item.sort_values(ascending=False)
+print(ordered_similarities)
+
+
+#K-Nearest  neighbors
+#how user can feel about item even if not tasted -> user-user similarity 
+#CHECK THIS SIMILARITIES!!!
+similarities = cosine_similarity(user_data_pivot)
+cosine_similarity_user = pd.DataFrame(similarities, #CHECK_IT - Again no data!!! 
+                                      index = user_data_pivot.index,
+                                      columns = user_data_pivot.index)
+cosine_similarity_user.head()
+
+user_similarities_series = cosine_similarity_user.loc["USER 1"]
+ordered_similarities = user_similarities_series.sort_values(ascending = False)
+KNN = ordered_similarities[1:3].index
+
+print(KNN)
+
+neighbour = user_data_pivot.reindex(KNN)
+neighbour["Star Salt"].mean() #users similat to them gave it - but if no response then misleasing 
+
+#SCIKIT-LEARN KNN -SOMETHING WRONG HERE!!!
+user_data_pivot.drop("Star Salt", axis=1, inplace=True)
+target_user_x = user_data_pivot.loc[["USER 1"]]
+print(target_user_x)
+
+other_users_y = user_data["Star Salt"]
+other_users_x = user_data_pivot[other_users_y.notnull()]
+print(other_users_x)
+
+other_users_y.dropna(inplace=True)
+print(other_users_y) #data you want to predict
+
+
+user_knn = KNeighborsRegressor(metric="cosine", n_neighbors=2)
+user_knn.fit(other_users_x, other_users_y)
+user_user_pred = user_knn.predict(target_user_x)
+print(user_user_pred)
