@@ -171,3 +171,5 @@ user_knn = KNeighborsRegressor(metric="cosine", n_neighbors=2)
 user_knn.fit(other_users_x, other_users_y)
 user_user_pred = user_knn.predict(target_user_x)
 print(user_user_pred)
+
+print("GIT CHECK")
