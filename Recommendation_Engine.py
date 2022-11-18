@@ -1,32 +1,39 @@
-#recommendation creation for customers & theit taste reg Pepsico products
+# Checking customers taste regarding Pepsico Snacks in order to provide further product recommendation 
+# For this purpose very simple dataset was created  
+
+# import required libraries 
 import pandas as pd
 from sklearn.metrics import jaccard_score
 from scipy.spatial.distance import pdist, squareform
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.neighbors import KNeighborsRegressor 
 from itertools import permutations 
+
+# create function to check the "most common" pair of brands
 def create_pairs(x):
-    pairs = pd.DataFrame(list(permutations(x.values, 2)),#books that are read together
+    pairs = pd.DataFrame(list(permutations(x.values, 2)),
                              columns=["brand_1","brand_2"])      
     return pairs
 
+###
 
-#################
+# I. 
 
-#Read and modify existing dataframe 
+# Read and modify existing dataframe for further analysis 
 brand_data = pd.read_excel('Brand_details.xlsx', 'data')
 data = brand_data.iloc[2:,1:]
 data = data.reset_index(drop = True)
 data.columns = data.iloc[0]
 data = data[1:]
 data = data.rename(columns={"Liked/not liked":"Liked"})
+print("data")
 
-
-### Non-personalized recommandation ###
-#Find the brand which is liked the most by users
+# Non-personalized recommandation - directed to all users, without taking into consideration users preferences
+# Find the brand which is liked the most by users
 Fdata = data[data.Liked == "yes"]
 count_likes=Fdata['Brand'].value_counts()
-print("Brands which users liked the most:\n", count_likes.index)
+count_likes = count_likes.head(3)
+print("Three top brands which users liked the most:\n", count_likes.index)
 
 #check the ratio between - liked/not like e.g. 0.5 => 50% of consumers liked the product 
 data["Liked"] = data['Liked'].replace(['yes', 'no'], ['1', '0']) 
@@ -36,47 +43,45 @@ avg_likes = round(avg_likes,2)
 sorted_avg = avg_likes.sort_values(by="Liked", ascending = False)
 print(sorted_avg)
 
-#check not how many users voted for a single product 
+# check if results are not disrupted - e.g. Sunbites 100% liking, but just 1 conusumer ranked 
 brand_frequency = data["Brand"].value_counts()
 print(brand_frequency)
 frequently_tasted_brands = brand_frequency[brand_frequency > 2].index
 print("Brands rated more than 2 times:\n", frequently_tasted_brands)
 
-#####################################
-
-####CHECK BELOW CODE - "NON-PERSONALIZED RECOMMNEDATIONS" - END OF VIDEO DATACAMP
-#final_brands = data[data["Brand"].isin(frequently_tasted_brands)]
-#final_brands_avg = frequently_tasted_brands[["Brand","Liked"]].groupby("Brand")
-#print(final_brands_avg.heaad())
+# include rows in df that include brands tasted by consumers > 2 times and check in this group the liking ratio
+final_brands = data[data["Brand"].isin(frequently_tasted_brands)]
+final_brands_avg = final_brands[["Brand","Liked"]].groupby("Brand").mean()
+print(final_brands_avg.sort_values(by="Liked", ascending = False))
 
 # --> Conclusion - Doritos brand was tasted the most and the brand had the highest 'liking' ratio
-# --> Sunbites high ranking was disrupted due to low number of  who tasted the brand   
+# --> Sunbites high ranking was disrupted due to low number of cosumers who tasted the brand   
 
-### Non-personalized recommandation ###
-#make suggestions of finding most common pair of brands 
+# II
 
-###### CHECK it as well!!! ####
-#create the pair function
+# make suggestions of finding most common pair of brands 
+ 
+brands_pair = Fdata.groupby("User")["Brand"].apply(create_pairs)
+brands_pair = brands_pair.reset_index(drop=True)
+print(brands_pair)
 
-#brands_pair = data.groupby("User")["Brand"].apply(create_pairs)
-#brands_pair.reset_index(drop=True)
-##count the pairs, how often each combination occurs 
-#pair_counts = brands_pair.groupby(["brand_1","brand_2"]).size 
-#pair_counts_df = pair_counts.to_frame(name = 'size').reset_index()
-#pair_conts_sorted = pair_counts_df.sort_values('size', ascending = False)
-#print(pair_counts_df.head())
+#count the pairs, how often each combination occurs 
+pair_counts = brands_pair.groupby(["brand_1","brand_2"]).size() 
+pair_counts
+pair_counts_df = pair_counts.to_frame(name = 'size').reset_index() #to clean up index 
+pair_counts_sorted = pair_counts_df.sort_values('size', ascending = False)
+check_pair = pair_counts_sorted[pair_counts_sorted["brand_1"] == "LAYS"]
+print(check_pair)
 
-#######################################
+# --> Conclusion e.g. For consumers who are buying LAYS brand it can be recommended also Doritos (from ealier section we know that Doritos was a brand with relative high liking ratio)
 
 ### Content-based recommendations ###
 #based on the similarities based on items user liked in the past
 cont_data = data.drop(["User","Sub Brand","TECHNOLOGY","Liked"], axis = 1)
 brand_flavours_df = pd.crosstab(cont_data["Brand"], cont_data["HARMONIZED_FLAVOUR"])
 print(brand_flavours_df)
-#jaccard similarity
-#ratio of attributes they have in common divided by total sumber od attributies combined
 
-#take from jaccard_score library 
+#jaccard similarity (fron library) - ratio of attributes they have in common divided by total sumber od attributies combined
 #below useful to check similarities between single items
 doritos_row = brand_flavours_df.loc["DORITOS"]
 lays_row = brand_flavours_df.loc["LAYS"]
@@ -84,23 +89,21 @@ lays_row = brand_flavours_df.loc["LAYS"]
 #macro - Calculate metrics for each label, and find their unweighted mean. This does not take label imbalance into account.
 print("Jaccard similarity between Lays and Doritos is", jaccard_score(doritos_row, lays_row, average = 'macro'))
 
-#check all similarities; pdist- help doing it
+#check all similarities; pdist- calculate distance between observations
 jaccard_distances = pdist(brand_flavours_df.values, metric='jaccard')
 square_jaccard_distances = squareform(jaccard_distances)
-
 jaccard_similarities_array = 1 - square_jaccard_distances
 print(jaccard_similarities_array)
-
-
 
 ##create distance table for all brands that are available 
 distance_df = pd.DataFrame(jaccard_similarities_array,
                            index = brand_flavours_df.index,
                            columns = brand_flavours_df.index)
-print(distance_df)
-print(distance_df['LAYS']['Star'])
-print(distance_df['DORITOS'].sort_values(ascending=False))
+print("Distances for all brands \n", distance_df)
+print("Similarity for Lays and Cheetos brands:\n", distance_df['LAYS']['Cheetos'])
+print("Similarities for Doritos brand:\n", distance_df['DORITOS'].sort_values(ascending=False))
 
+# III
 
 ##User profile recommendations 
 #Find similar users and based on it check items which they liked 
@@ -172,4 +175,4 @@ user_knn.fit(other_users_x, other_users_y)
 user_user_pred = user_knn.predict(target_user_x)
 print(user_user_pred)
 
-print("GIT CHECK")
+#Matrix factorization to be implemented!  
