@@ -7,6 +7,7 @@ from sklearn.metrics import jaccard_score
 from scipy.spatial.distance import pdist, squareform
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.neighbors import KNeighborsRegressor 
+from sklearn.neighbors import KNeighborsClassifier
 from itertools import permutations 
 
 # create function to check the "most common" pair of brands
@@ -112,67 +113,83 @@ user_data = data.drop(data.columns[[1,2,3,4]],axis=1)
 user_data = user_data.pivot(index = "User", 
                                   columns="Brand_Flavour",
                                   values ="Liked")
+
 #NaN - filling with"0" might be misleading, so better to center each value around 0 
 avg_likes = user_data.mean(axis=1) #row means
 user_data_pivot = user_data.sub(avg_likes, axis=0) #substract from rest
 user_data_pivot = user_data_pivot.fillna(0)
-
 brand_data_pivot = user_data_pivot.T
 print(brand_data_pivot)
-#cosine - numpy array 
+
+#cosine - numpy array - values vary from -1/1 -> 1 is most similar
 cosine_similarity(brand_data_pivot.loc["LAYS Paprika", :].values.reshape(1,-1),
                   brand_data_pivot.loc["Star Paprika", :].values.reshape(1,-1))
+# --> Conclusion - brands seems to be quite similar reg consumers preferences
+
 #above - two brands quite similar
 cosine_similarity(brand_data_pivot.loc["LAYS Paprika", :].values.reshape(1,-1),
-                  brand_data_pivot.loc["Cheetos Cheese", :].values.reshape(1,-1))
-#above - value negative so not similar 
+                  brand_data_pivot.loc["Cheetos Ketchup", :].values.reshape(1,-1))
+# --> Conslusion - negative, so brand are quite different from each other
 
-#the most similar items
-#CHECK IT IF SIMILARITIES ADDED PROPERLY #STH WRONG HERE!! Why NA?
+#similarity metrics between all items 
 similarities = cosine_similarity(brand_data_pivot)
-cosine_similarity_df = pd.DataFrame(brand_data_pivot,#THIS!!!
+cosine_similarity_df = pd.DataFrame(similarities,
                                     index = brand_data_pivot.index,
                                     columns = brand_data_pivot.index)
+cosine_similarity_df
 
-cosine_similarity_item = cosine_similarity_df.loc["LAYS Salt"]
+#based on this similarity metrics it is possible to create recommendations e.g.
+#the most similar brand to Doritos Paprika is Star Salt based on the cunsumer preferences
+cosine_similarity_item = cosine_similarity_df.loc["DORITOS Paprika"]
 ordered_similarities = cosine_similarity_item.sort_values(ascending=False)
 print(ordered_similarities)
 
 
 #K-Nearest  neighbors
 #how user can feel about item even if not tasted -> user-user similarity 
-#CHECK THIS SIMILARITIES!!!
-similarities = cosine_similarity(user_data_pivot)
-cosine_similarity_user = pd.DataFrame(similarities, #CHECK_IT - Again no data!!! 
+u_similarities = cosine_similarity(user_data_pivot)
+cosine_similarity_user = pd.DataFrame(u_similarities,
                                       index = user_data_pivot.index,
                                       columns = user_data_pivot.index)
-cosine_similarity_user.head()
+cosine_similarity_user #here we can see which consumers have similar taste 
 
 user_similarities_series = cosine_similarity_user.loc["USER 1"]
 ordered_similarities = user_similarities_series.sort_values(ascending = False)
-KNN = ordered_similarities[1:3].index
+KNN = ordered_similarities[1:3].index # find 2 most similar consumers 
+KNN
 
-print(KNN)
+#what rating similar users gave to the product that was not rated by our key consumers
+neighbour_data = user_data_pivot.reindex(KNN)
+neighbour_data["Star Paprika"].mean() #users similar taste - but if no response then misleasing 
+## -- Conclusion -> most likely User 1 will not like it 
 
-neighbour = user_data_pivot.reindex(KNN)
-neighbour["Star Salt"].mean() #users similat to them gave it - but if no response then misleasing 
+#Scikit-learn KNN method 
+user_data_pivot2 =user_data_pivot.drop("Star Paprika", axis=1) #this is target
+target_user_x = user_data_pivot2.loc[["USER 1"]]
+print(target_user_x) #we want to predict USER 1, so seperate it 
 
-#SCIKIT-LEARN KNN -SOMETHING WRONG HERE!!!
-user_data_pivot.drop("Star Salt", axis=1, inplace=True)
-target_user_x = user_data_pivot.loc[["USER 1"]]
-print(target_user_x)
+#original table - how other users liked Star Paprika brand
+other_users_y = user_data["Star Paprika"] #with
+print(other_users_y)
 
-other_users_y = user_data["Star Salt"]
-other_users_x = user_data_pivot[other_users_y.notnull()]
+#we care about consumers who scored the book, so filter just users who tried it
+#with centralized, so we are choosing consumer from orginal table without NaN
+other_users_x = user_data_pivot2[other_users_y.notnull()] 
 print(other_users_x)
+
 
 other_users_y.dropna(inplace=True)
 print(other_users_y) #data you want to predict
 
-
+#most likely how User 1 will like "Star Paprika" product
 user_knn = KNeighborsRegressor(metric="cosine", n_neighbors=2)
 user_knn.fit(other_users_x, other_users_y)
 user_user_pred = user_knn.predict(target_user_x)
-print(user_user_pred)
+print("\nUser 1 will like Star Paprika:\n", user_user_pred)
 
+#Classifier method - often used for non-numeric predcitions -right/wrong 
+user_knn = KNeighborsClassifier(metric="cosine", n_neighbors=2)
+user_knn.fit(other_users_x, other_users_y)
+user_user_pred = user_knn.predict(target_user_x)
+print("\nMost probably User 1 will classify brand as :\n", user_user_pred)
 #Matrix factorization to be implemented!  
