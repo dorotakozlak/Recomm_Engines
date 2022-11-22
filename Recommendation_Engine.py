@@ -192,4 +192,6 @@ user_knn = KNeighborsClassifier(metric="cosine", n_neighbors=2)
 user_knn.fit(other_users_x, other_users_y)
 user_user_pred = user_knn.predict(target_user_x)
 print("\nMost probably User 1 will classify brand as :\n", user_user_pred)
-#Matrix factorization to be implemented!  
+
+
+#Matrix factorization to be implemented next days!!
