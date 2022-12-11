@@ -237,7 +237,7 @@ user_knn.fit(other_users_x, other_users_y)
 user_user_pred = user_knn.predict(target_user_x)
 print("\nMost probably User 1 will classify brand as :\n", user_user_pred)
 
-#IV ##not finished
+#IV ##not finished ##tobedone
 
 #Matrix factorization - decompose user rating metrics into product into 2 lower dimention (factors)
 #Sparsity check - how many empty values in total 
