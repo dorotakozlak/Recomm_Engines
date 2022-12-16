@@ -144,7 +144,7 @@ print("Jaccard similarity between Lays and Doritos is", content_based_recommenda
 
 ##User profile recommendations 
 #Find similar users and based on it check items which they liked 
-class user_profile_recommendations():
+class user_profile_recommendations:
     def modified_brand_data():
         one_zero_modified_data = read_excel_and_modify_data()
         one_zero_modified_data["Brand_Flavour"] = one_zero_modified_data["Brand"] +" " + one_zero_modified_data["HARMONIZED_FLAVOUR"] 
@@ -157,6 +157,7 @@ class user_profile_recommendations():
         user_data_pivot = user_data_pivot.fillna(0)
         brand_data_pivot = user_data_pivot.T
         return brand_data_pivot
+    
 #cosine - numpy array - values vary from -1/1 -> 1 is most similar    
     def cosine_similarity(brand_flavour1, brand_flavour2):
         cosine_similarity_check = cosine_similarity(brand_data_pivot.loc[brand_flavour1, :].values.reshape(1,-1),
@@ -191,51 +192,61 @@ print("The most similar brand to Doritos Paprika is\n", user_profile_recommendat
 
 #K-Nearest  neighbors
 #how user can feel about item even if not tasted -> user-user similarity 
-u_similarities = cosine_similarity(user_data_pivot)
-cosine_similarity_user = pd.DataFrame(u_similarities,
-                                      index = user_data_pivot.index,
-                                      columns = user_data_pivot.index)
-cosine_similarity_user #here we can see which consumers have similar taste 
-
-user_similarities_series = cosine_similarity_user.loc["USER 1"]
-ordered_similarities = user_similarities_series.sort_values(ascending = False)
-KNN = ordered_similarities[1:3].index # find 2 most similar consumers 
-KNN
-
-#what rating similar users gave to the product that was not rated by our key consumers
-neighbour_data = user_data_pivot.reindex(KNN)
-neighbour_data["Star Paprika"].mean() #users similar taste - but if no response then misleasing 
-## -- Conclusion -> most likely User 1 will not like it 
+class K_nearest_neighbors:
+  #STH WRONG HERE
+  #here we can see which consumers have similar taste
+    def K_nearest_df_similar_users(): 
+        user_data_pivot = user_profile_recommendations.modified_brand_data()
+        u_similarities = cosine_similarity(user_data_pivot)
+        cosine_similarity_user = pd.DataFrame(u_similarities,
+                                              index = user_data_pivot.index,
+                                              columns = user_data_pivot.index)
+        return cosine_similarity_user
+    
+    #STH WRONG HERE
+    def find_two_most_similar_users(user1):
+        cosine_similarity_user = K_nearest_neighbors.K_nearest_df_similar_users
+        user_similarities_series = cosine_similarity_user.loc[[user1]]
+        user_similarities_series = user_similarities_seriessort_values(ascending = False)
+        KNN = user_similarities_serie[1:3].index # find 2 most similar consumers 
+        return KNN
+    
+    #STH WRONG HERE
+    #what rating similar users gave to the product that was not rated by our key consumers
+    def check_raitings_of_similar_users(brand1_user):
+        user_data_pivot = user_profile_recommendations.modified_brand_data()
+        neighbour_data = user_data_pivot.reindex(KNN)
+        neighbour_data = neighbour_data[brand1_user].mean() #users similar taste - but if no response then misleasing 
+        return neighbour_data
 
 #Scikit-learn KNN method 
-user_data_pivot2 =user_data_pivot.drop("Star Paprika", axis=1) #this is target
-target_user_x = user_data_pivot2.loc[["USER 1"]]
-print(target_user_x) #we want to predict USER 1, so seperate it 
-
-#original table - how other users liked Star Paprika brand
-other_users_y = user_data["Star Paprika"] #with
-print(other_users_y)
-
-#we care about consumers who scored the book, so filter just users who tried it
-#with centralized, so we are choosing consumer from orginal table without NaN
-other_users_x = user_data_pivot2[other_users_y.notnull()] 
-print(other_users_x)
-
-
-other_users_y.dropna(inplace=True)
-print(other_users_y) #data you want to predict
+    def scikit_learn_KNN_predict_user_rates(brand1_scikit, user1_scikit): 
+        user_data_pivot = user_profile_recommendations.modified_brand_data()
+        modified_data_for_user = user_profile_recommendations.modified_brand_data()
+        user_data_pivot2 = user_data_pivot.drop(brand1_scikit, axis=1) #this is target
+        target_user_x = user_data_pivot2.loc[[user1_scikit]]
+        
+        other_users_y = modified_data_for_user[brand1_scikit] #check if 1 or 2 brackets ##original table - how other users liked Star Paprika brand
+        other_users_y = other_users_y.dropna(inplace=True)
+        other_users_x = user_data_pivot2[other_users_y.notnull()] #with centralized, so we are choosing consumer from orginal table without NaN #we care about consumers who scored the book, so filter just users who tried it
+        return target_user_x, other_users_y, other_users_x  # we want to predict user1 
+    
+print("The most similar two users to USER 1 are \n:", K_nearest_neighbors.find_two_most_similar_users("USER 1") )   
+print("Check the taste of similar users for Star Paprika"), K_nearest_neighbors.check_raitings_of_similar_users("Star Paprika") 
+## -- Conclusion -> most likely User 1 will not like it 
+print("Predict whether how will rate user 1 Star Paprika"), K_nearest_neighbors.scikit_learn_KNN_predict_user_rates("Star Paprika", "USER 1")
 
 #most likely how User 1 will like "Star Paprika" product
-user_knn = KNeighborsRegressor(metric="cosine", n_neighbors=2)
-user_knn.fit(other_users_x, other_users_y)
-user_user_pred = user_knn.predict(target_user_x)
-print("\nUser 1 will like Star Paprika:\n", user_user_pred)
+    def KNeighborsRegressor_method(): 
+        other_users_y = K_nearest_df_similar_users.scikit_learn_KNN_predict_user_rates("Star Paprika", "USER 1")
+        other_users_x = K_nearest_df_similar_users.scikit_learn_KNN_predict_user_rates("Star Paprika", "USER 1")
+        user_knn = KNeighborsRegressor(metric="cosine", n_neighbors=2)
+        user_knn.fit(other_users_x, other_users_y)
+        user_user_pred = user_knn.predict(target_user_x)
+        return user_user_pred 
+    
+print("\nUser 1 will like Star Paprika:\n", K_nearest_neighbors.KNeighborsRegressor_method())
 
-#Classifier method - often used for non-numeric predcitions -right/wrong 
-user_knn = KNeighborsClassifier(metric="cosine", n_neighbors=2)
-user_knn.fit(other_users_x, other_users_y)
-user_user_pred = user_knn.predict(target_user_x)
-print("\nMost probably User 1 will classify brand as :\n", user_user_pred)
 
 #IV ##not finished ##tobedone
 
