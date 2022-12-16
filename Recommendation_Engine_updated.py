@@ -40,7 +40,7 @@ def read_excel_and_modify_data():
 read_excel_and_modify_data()
 
 # Non-personalized recommandation - directed to all users, without taking into consideration users preferences
-class non_personalized_recommendation:
+class NonPersonalizedRecommendation:
     
 # Find the brand which is liked the most by users
     def top_brands_for_users():
@@ -66,16 +66,16 @@ class non_personalized_recommendation:
 # include rows in df that include brands tasted by consumers > 2 times and check in this group the liking ratio    
     def likes_ratio_just_for_often_rated_brands():
         one_zero_modified_data = read_excel_and_modify_data()
-        frequently_tasted_brands = non_personalized_recommendation.check_how_many_consumers_voted()
+        frequently_tasted_brands = NonPersonalizedRecommendation.check_how_many_consumers_voted()
         popular_brands = one_zero_modified_data[one_zero_modified_data["Brand"].isin(frequently_tasted_brands)]
         popular_brands_avg = popular_brands[["Brand","Liked"]].groupby("Brand").mean().sort_values(by="Liked", ascending = False)
         return popular_brands_avg
 
     
-print("Three top brands which users liked the most:\n", non_personalized_recommendation.top_brands_for_users() )
-print("Subbrand 'likes ratio' for Pepsico brands:\n", non_personalized_recommendation.check_likes_ratio())
-print("Brands for which consumers ranked more that 2 times:\n", non_personalized_recommendation.check_how_many_consumers_voted())
-print("'Like' ratio for brands which were ranked more than 2 times:\n", non_personalized_recommendation.likes_ratio_just_for_often_rated_brands().sort_values(by="Liked", ascending = False))
+print("Three top brands which users liked the most:\n", NonPersonalizedRecommendation.top_brands_for_users() )
+print("Subbrand 'likes ratio' for Pepsico brands:\n", NonPersonalizedRecommendation.check_likes_ratio())
+print("Brands for which consumers ranked more that 2 times:\n", NonPersonalizedRecommendation.check_how_many_consumers_voted())
+print("'Like' ratio for brands which were ranked more than 2 times:\n", NonPersonalizedRecommendation.likes_ratio_just_for_often_rated_brands().sort_values(by="Liked", ascending = False))
 
 # --> Conclusion - Doritos brand was tasted the most and the brand had the highest 'liking' ratio
 # --> Sunbites high ranking was disrupted due to low number of cosumers who tasted the brand   
@@ -88,7 +88,7 @@ def create_pairs(x):
     return pairs
 
 #check the "most common" pair of brands to make suggestions 
-class make_suggestion_find_most_common_pair_of_brands:
+class MakeSuggestionFindMostCommonPairOfBrands:
        
  #function to check the "most common" pair of brands
      def modify_data_for_pairs():
@@ -97,12 +97,12 @@ class make_suggestion_find_most_common_pair_of_brands:
          return brands_pair
 #count the pairs, how often each combination occurs
      def quantity_of_brand_pair_combination(brand_name):
-         brands_pair = make_suggestion_find_most_common_pair_of_brands.modify_data_for_pairs()
+         brands_pair = MakeSuggestionFindMostCommonPairOfBrands.modify_data_for_pairs()
          pair_counts = brands_pair.groupby(["brand_1","brand_2"]).size() 
          pair_counts_df = pair_counts.to_frame(name = "size").reset_index().sort_values("size",ascending = False)
          check_pair = pair_counts_df[pair_counts_df["brand_1"] == brand_name]
          return check_pair
-print("Check most common brand pairs:\n", make_suggestion_find_most_common_pair_of_brands.quantity_of_brand_pair_combination("LAYS"))    
+print("Check most common brand pairs:\n", MakeSuggestionFindMostCommonPairOfBrands.quantity_of_brand_pair_combination("LAYS"))    
 
 # --> Conclusion e.g. For consumers who are buying LAYS brand it can be recommended also Doritos (from ealier section we know that Doritos was a brand with relative high liking ratio)
 
@@ -113,7 +113,7 @@ print("Check most common brand pairs:\n", make_suggestion_find_most_common_pair_
 #jaccard similarity (fron library) - ratio of attributes they have in common divided by total sumber od attributies combined
 #below useful to check similarities between single items
 
-class content_based_recommendations: 
+class ContentBasedRecommendations: 
     def jaccard_similarity(brand1, brand2):
         data_for_content = read_excel_and_modify_data()
         brand_flavours_df = pd.crosstab(data_for_content["Brand"], data_for_content["HARMONIZED_FLAVOUR"])
@@ -127,7 +127,7 @@ class content_based_recommendations:
 #check all similarities; pdist- calculate distance between observations
 ###FOCUS NOW ON IT###
     def jaccard_similarity_all():
-        brand_flavours_df = content_based_recommendations.jaccard_similarity()
+        brand_flavours_df = ContentBasedRecommendations.jaccard_similarity()
         jaccard_distances = pdist(brand_flavours_df.values, metric='jaccard')
         square_jaccard_distances = squareform(jaccard_distances)
         jaccard_similarities_array = 1 - square_jaccard_distances
@@ -136,15 +136,15 @@ class content_based_recommendations:
                                    columns = brand_flavours_df.index)
         return distance_df
     
-print("Distances for all brands \n", content_based_recommendations.jaccard_similarity_all())
-print("Jaccard similarity between Lays and Doritos is", content_based_recommendations.jaccard_similarity("LAYS","DORITOS"))      
+print("Distances for all brands \n", ContentBasedRecommendations.jaccard_similarity_all())
+print("Jaccard similarity between Lays and Doritos is", ContentBasedRecommendations.jaccard_similarity("LAYS","DORITOS"))      
 #print("Similarities for Doritos brand:\n", distance_df['DORITOS'].sort_values(ascending=False))
 
 # III
 
 ##User profile recommendations 
 #Find similar users and based on it check items which they liked 
-class user_profile_recommendations:
+class UserProfileRecommendations:
     def modified_brand_data():
         one_zero_modified_data = read_excel_and_modify_data()
         one_zero_modified_data["Brand_Flavour"] = one_zero_modified_data["Brand"] +" " + one_zero_modified_data["HARMONIZED_FLAVOUR"] 
@@ -166,7 +166,7 @@ class user_profile_recommendations:
 
 #similarity metrics between all items 
     def cosine_similarity_all_items(): 
-        brand_data_pivot = user_profile_recommendations.modified_brand_data()
+        brand_data_pivot = UserProfileRecommendations.modified_brand_data()
         similarities = cosine_similarity(brand_data_pivot)
         similarities_df = pd.DataFrame(similarities,
                                        index = brand_data_pivot.index,
@@ -176,27 +176,27 @@ class user_profile_recommendations:
 #based on this similarity metrics it is possible to create recommendations e.g.
 #the most similar brand to Doritos Paprika is Star Salt based on the cunsumer preferences
     def the_most_similar_brand(similar_brand):
-        similarities_df = user_profile_recommendations.cosine_similarity_all_items() 
+        similarities_df = UserProfileRecommendations.cosine_similarity_all_items() 
         cosine_similarity_item = similarities_df.loc[similar_brand]
         ordered_similarities = cosine_similarity_item.sort_values(ascending=False)
         return ordered_similarities 
     
 print("Similatrities between all products - \n", user_profile_recommendations.cosine_similarity_all_items())
 
-print("Similatrity between two products - LAYS Paprika & Star Paprika is \n", user_profile_recommendations.cosine_similarity("LAYS Paprika", "Star Paprika"))
+print("Similatrity between two products - LAYS Paprika & Star Paprika is \n", UserProfileRecommendations.cosine_similarity("LAYS Paprika", "Star Paprika"))
 # --> Conclusion - brands seems to be quite similar reg consumers preferences
-print("Similatrity between two products - LAYS Paprika & Cheetos Ketchup is \n", user_profile_recommendations.cosine_similarity("LAYS Paprika", "Cheetos Ketchup"))
+print("Similatrity between two products - LAYS Paprika & Cheetos Ketchup is \n", UserProfileRecommendations.cosine_similarity("LAYS Paprika", "Cheetos Ketchup"))
 # --> Conslusion - negative, so brand are quite different from each other
-print("The most similar brand to Doritos Paprika is\n", user_profile_recommendations.the_most_similar_brand("DORITOS Paprika"))
+print("The most similar brand to Doritos Paprika is\n", UserProfileRecommendations.the_most_similar_brand("DORITOS Paprika"))
 
 
 #K-Nearest  neighbors
 #how user can feel about item even if not tasted -> user-user similarity 
-class K_nearest_neighbors:
+class KNearestNeighbors:
   #STH WRONG HERE
   #here we can see which consumers have similar taste
     def K_nearest_df_similar_users(): 
-        user_data_pivot = user_profile_recommendations.modified_brand_data()
+        user_data_pivot = UserProfileRecommendations.modified_brand_data()
         u_similarities = cosine_similarity(user_data_pivot)
         cosine_similarity_user = pd.DataFrame(u_similarities,
                                               index = user_data_pivot.index,
@@ -205,7 +205,7 @@ class K_nearest_neighbors:
     
     #STH WRONG HERE
     def find_two_most_similar_users(user1):
-        cosine_similarity_user = K_nearest_neighbors.K_nearest_df_similar_users
+        cosine_similarity_user = UserProfileRecommendations.K_nearest_df_similar_users
         user_similarities_series = cosine_similarity_user.loc[[user1]]
         user_similarities_series = user_similarities_seriessort_values(ascending = False)
         KNN = user_similarities_serie[1:3].index # find 2 most similar consumers 
@@ -214,15 +214,15 @@ class K_nearest_neighbors:
     #STH WRONG HERE
     #what rating similar users gave to the product that was not rated by our key consumers
     def check_raitings_of_similar_users(brand1_user):
-        user_data_pivot = user_profile_recommendations.modified_brand_data()
+        user_data_pivot = UserProfileRecommendations.modified_brand_data()
         neighbour_data = user_data_pivot.reindex(KNN)
         neighbour_data = neighbour_data[brand1_user].mean() #users similar taste - but if no response then misleasing 
         return neighbour_data
 
 #Scikit-learn KNN method 
     def scikit_learn_KNN_predict_user_rates(brand1_scikit, user1_scikit): 
-        user_data_pivot = user_profile_recommendations.modified_brand_data()
-        modified_data_for_user = user_profile_recommendations.modified_brand_data()
+        user_data_pivot = UserProfileRecommendations.modified_brand_data()
+        modified_data_for_user = UserProfileRecommendations.modified_brand_data()
         user_data_pivot2 = user_data_pivot.drop(brand1_scikit, axis=1) #this is target
         target_user_x = user_data_pivot2.loc[[user1_scikit]]
         
@@ -231,10 +231,10 @@ class K_nearest_neighbors:
         other_users_x = user_data_pivot2[other_users_y.notnull()] #with centralized, so we are choosing consumer from orginal table without NaN #we care about consumers who scored the book, so filter just users who tried it
         return target_user_x, other_users_y, other_users_x  # we want to predict user1 
     
-print("The most similar two users to USER 1 are \n:", K_nearest_neighbors.find_two_most_similar_users("USER 1") )   
-print("Check the taste of similar users for Star Paprika"), K_nearest_neighbors.check_raitings_of_similar_users("Star Paprika") 
+print("The most similar two users to USER 1 are \n:", KNearestNeighbors.find_two_most_similar_users("USER 1") )   
+print("Check the taste of similar users for Star Paprika"), KNearestNeighbors.check_raitings_of_similar_users("Star Paprika") 
 ## -- Conclusion -> most likely User 1 will not like it 
-print("Predict whether how will rate user 1 Star Paprika"), K_nearest_neighbors.scikit_learn_KNN_predict_user_rates("Star Paprika", "USER 1")
+print("Predict whether how will rate user 1 Star Paprika"), KNearestNeighbors.scikit_learn_KNN_predict_user_rates("Star Paprika", "USER 1")
 
 #most likely how User 1 will like "Star Paprika" product
     def KNeighborsRegressor_method(): 
@@ -245,7 +245,7 @@ print("Predict whether how will rate user 1 Star Paprika"), K_nearest_neighbors.
         user_user_pred = user_knn.predict(target_user_x)
         return user_user_pred 
     
-print("\nUser 1 will like Star Paprika:\n", K_nearest_neighbors.KNeighborsRegressor_method())
+print("\nUser 1 will like Star Paprika:\n", KNearestNeighbors.KNeighborsRegressor_method())
 
 
 #IV ##not finished ##tobedone
