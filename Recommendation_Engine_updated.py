@@ -230,11 +230,6 @@ class KNearestNeighbors:
         other_users_y = other_users_y.dropna(inplace=True)
         other_users_x = user_data_pivot2[other_users_y.notnull()] #with centralized, so we are choosing consumer from orginal table without NaN #we care about consumers who scored the book, so filter just users who tried it
         return target_user_x, other_users_y, other_users_x  # we want to predict user1 
-    
-print("The most similar two users to USER 1 are \n:", KNearestNeighbors.find_two_most_similar_users("USER 1") )   
-print("Check the taste of similar users for Star Paprika"), KNearestNeighbors.check_raitings_of_similar_users("Star Paprika") 
-## -- Conclusion -> most likely User 1 will not like it 
-print("Predict whether how will rate user 1 Star Paprika"), KNearestNeighbors.scikit_learn_KNN_predict_user_rates("Star Paprika", "USER 1")
 
 #most likely how User 1 will like "Star Paprika" product
     def KNeighborsRegressor_method(): 
@@ -245,6 +240,10 @@ print("Predict whether how will rate user 1 Star Paprika"), KNearestNeighbors.sc
         user_user_pred = user_knn.predict(target_user_x)
         return user_user_pred 
     
+print("The most similar two users to USER 1 are \n:", KNearestNeighbors.find_two_most_similar_users("USER 1") )   
+print("Check the taste of similar users for Star Paprika"), KNearestNeighbors.check_raitings_of_similar_users("Star Paprika") 
+## -- Conclusion -> most likely User 1 will not like it 
+print("Predict whether how will rate user 1 Star Paprika"), KNearestNeighbors.scikit_learn_KNN_predict_user_rates("Star Paprika", "USER 1")    
 print("\nUser 1 will like Star Paprika:\n", KNearestNeighbors.KNeighborsRegressor_method())
 
 
