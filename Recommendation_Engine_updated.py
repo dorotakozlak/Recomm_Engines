@@ -8,7 +8,7 @@ from sklearn.metrics import jaccard_score
 from scipy.spatial.distance import pdist, squareform
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.neighbors import KNeighborsRegressor 
-from sklearn.neighbors import KNeighborsClassifier
+#from sklearn.neighbors import KNeighborsClassifier
 from itertools import permutations 
 
 # I. 
@@ -27,13 +27,13 @@ def read_excel_and_modify_data():
     original_data = original_data[1:]
     
     modified_data = original_data.rename(columns={"Liked/not liked":"Liked"})
-    just_liked_brands = modified_data[modified_data.Liked == "yes"]
+    #just_liked_brands = modified_data[modified_data.Liked == "yes"]
     
     one_zero_modified_data = modified_data
     one_zero_modified_data["Liked"] = one_zero_modified_data["Liked"].replace(['yes', 'no'], ['1', '0'])
     one_zero_modified_data.Liked = one_zero_modified_data.Liked.astype(float)
     
-    data_for_content = one_zero_modified_data.drop(["User","Sub Brand","TECHNOLOGY","Liked"], axis = 1)
+    #data_for_content = one_zero_modified_data.drop(["User","Sub Brand","TECHNOLOGY","Liked"], axis = 1)
   
     return one_zero_modified_data
     
@@ -154,6 +154,7 @@ print("Distances for all brands \n", ContentBasedRecommendations.jaccard_similar
 #Find similar users and based on it check items which they liked 
 
 class UserProfileRecommendations:
+    
     def modified_brand_data():
         one_zero_modified_data = read_excel_and_modify_data()
         one_zero_modified_data["Brand_Flavour"] = one_zero_modified_data["Brand"] +" " + one_zero_modified_data["HARMONIZED_FLAVOUR"] 
@@ -164,9 +165,10 @@ class UserProfileRecommendations:
         avg_likes = modified_data_for_user.mean(axis=1) #row means
         user_data_pivot = modified_data_for_user.sub(avg_likes, axis=0) #substract from rest
         user_data_pivot = user_data_pivot.fillna(0)
+        
         brand_data_pivot = user_data_pivot.T
         return brand_data_pivot
-
+    
 #cosine - numpy array - values vary from -1/1 -> 1 is most similar    
     def cosine_similarity_function(brand_flavour1, brand_flavour2):
         
@@ -204,31 +206,35 @@ print("The most similar brand to Doritos Paprika is\n", UserProfileRecommendatio
 #K-Nearest  neighbors
 #how user can feel about item even if not tasted -> user-user similarity 
 #here we can see which consumers have similar taste
+
 class KNearestNeighbors:
     def K_nearest_df_similar_users(): 
-        user_data_pivot = UserProfileRecommendations.modified_brand_data()
+        brand_data_pivot = UserProfileRecommendations.modified_brand_data()
+        user_data_pivot = brand_data_pivot.T
         u_similarities = cosine_similarity(user_data_pivot)
         cosine_similarity_user = pd.DataFrame(u_similarities,
                                               index = user_data_pivot.index,
                                               columns = user_data_pivot.index)
         return cosine_similarity_user
-
+    
     def find_two_most_similar_users(user1):
         cosine_similarity_user = KNearestNeighbors.K_nearest_df_similar_users()
         #choose here respective column 
-        user_similarities_series = cosine_similarity_user.loc[:, user1]
+        user_similarities_series = cosine_similarity_user.loc[user1]
         user_similarities_series = user_similarities_series.sort_values(ascending = False)
         KNN = user_similarities_series[1:3].index # find 2 most similar consumers 
         return KNN
        
     #what rating similar users gave to the product that was not rated by our key consumers
-    def check_raitings_of_similar_users(brand1_user):
-        KNN = KNearestNeighbors.K_nearest_df_similar_users()
-        user_data_pivot = UserProfileRecommendations.modified_brand_data()
+    #THIS one to be checked 
+    def check_raitings_of_similar_users(brand1_user, user1):
+        KNN = KNearestNeighbors.find_two_most_similar_users(user1)
+        user_data_pivot = KNearestNeighbors.K_nearest_df_similar_users()
         neighbour_data = user_data_pivot.reindex(KNN)
         neighbour_data = neighbour_data[brand1_user].mean() #users similar taste - but if no response then misleasing 
         return neighbour_data
 
+    
 #Scikit-learn KNN method 
     def scikit_learn_KNN_predict_user_rates(brand1_scikit, user1_scikit): 
         user_data_pivot = UserProfileRecommendations.modified_brand_data()
@@ -250,9 +256,9 @@ class KNearestNeighbors:
         user_knn.fit(other_users_x, other_users_y)
         user_user_pred = user_knn.predict(target_user_x)
         return user_user_pred 
-    
+  
 print("The most similar two users to USER 1 are \n:", KNearestNeighbors.find_two_most_similar_users("USER 1"))
-print("Check the taste of similar users for Star Paprika"), KNearestNeighbors.check_raitings_of_similar_users("Star Paprika") 
+#print("Check the taste of similar users for Star Paprika"), KNearestNeighbors.check_raitings_of_similar_users("Star Paprika", "USER 1") 
 ## -- Conclusion -> most likely User 1 will not like it 
 #print("Predict whether how will rate user 1 Star Paprika"), KNearestNeighbors.scikit_learn_KNN_predict_user_rates("Star Paprika", "USER 1")    
 #print("\nUser 1 will like Star Paprika:\n", KNearestNeighbors.KNeighborsRegressor_method())
